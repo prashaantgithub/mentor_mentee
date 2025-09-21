@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Leave Requests{% endblock %}
+
+{% block head_extra %}
+<style>
+    .request-card {
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background-color: var(--surface-color);
+    }
+    .request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .request-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    .request-body .reason {
+        background-color: var(--background-color);
+        border-radius: var(--border-radius-sm);
+        padding: 1rem;
+        margin-top: 0.5rem;
+        white-space: pre-wrap;
+    }
+    .request-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Pending Leave Requests</h1>
+</div>
+
+<div class="card">
+    <div id="requests-container">
+        {% if requests %}
+            {% for req in requests %}
+            <div class="request-card" id="request-{{ req.id }}">
+                <div class="request-header">
+                    <h3>Request from {{ req.mentee.name }}</h3>
+                    <span class="text-muted">Received: {{ req.requested_at|timestamp_to_local('full') }}</span>
+                </div>
+                <div class="request-body">
+                    <p><strong>Session:</strong> Session {{ req.session.session_number }} on {{ req.session.start_time|timestamp_to_local('full') }}</p>
+                    <p><strong>Reason Provided:</strong></p>
+                    <p class="reason">{{ req.reason }}</p>
+                </div>
+                <div class="request-actions">
+                    <button class="btn btn-danger-outline btn-decline" data-request-id="{{ req.id }}">Decline</button>
+                    <button class="btn btn-success btn-approve" data-request-id="{{ req.id }}">Approve</button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>You have no pending leave requests.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script src="{{ url_for('static', filename='js/requests.js') }}"></script>
+{% endblock %}

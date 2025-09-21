@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Manage {{ target_class.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Manage Class: {{ target_class.name }}</h1>
+    <a href="{{ url_for('admin.manage_classes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to All Classes
+    </a>
+</div>
+
+<div class="card">
+    <h3>Excel/CSV Upload</h3>
+    <p class="small-text">Upload a file with the following columns: <strong>Reg_num, Name</strong>. All other details will be filled by the mentee on their first login.</p>
+    <form action="{{ url_for('admin.upload_and_review_students', class_id=target_class.id) }}" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="student_file" class="visually-hidden">Choose File</label>
+            <input type="file" id="student_file" name="student_file" class="form-control" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Upload and Review</button>
+    </form>
+</div>
+
+{% if unbatched_students %}
+<div class="card mt-3">
+    <h3>Unbatched Students ({{ unbatched_students|length }})</h3>
+    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+        <table class="data-table">
+            <thead><tr><th>Reg. No</th><th>Name</th></tr></thead>
+            <tbody>
+                {% for mentee_profile in unbatched_students %}
+                    <tr><td>{{ mentee_profile.reg_num }}</td><td>{{ mentee_profile.user.name }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-3">
+        <form action="{{ url_for('admin.auto_batch_students', class_id=target_class.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to auto-batch all unbatched students based on the defined rules?');">
+            <button type="submit" class="btn btn-secondary w-100">Auto-Batch All Students</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mt-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <h3>Created Batches</h3>
+        {% if batches|selectattr('mentor_assignment', 'none')|list|length > 0 %}
+        <a href="{{ url_for('admin.assign_mentor', class_id=target_class.id) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Assign Mentors
+        </a>
+        {% endif %}
+    </div>
+    {% if batches %}
+        <div class="list-group mt-3" id="created-batches-list">
+            {% for batch in batches %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-sm btn-link view-students-link ps-0" data-batch-id="{{ batch.id }}" data-batch-name="{{ batch.name }}" data-student-count="{{ batch.mentees.count() }}">
+                       <strong>{{ batch.name }}</strong> ({{ batch.mentees.count() }} students)
+                    </button>
+                    {% if batch.mentor_assignment and batch.mentor_assignment.mentor %}
+                    <span class="assigned-mentor-info d-block text-muted">
+                        Assigned to: <strong>{{ batch.mentor_assignment.mentor.name }}</strong>
+                    </span>
+                    {% else %}
+                    <span class="assigned-mentor-info d-block text-muted">Not yet assigned</span>
+                    {% endif %}
+                </div>
+                <div class="batch-actions">
+                    {% if batch.mentor_assignment %}
+                    <a href="{{ url_for('admin.edit_assignment', assignment_id=batch.mentor_assignment.id) }}" class="btn btn-secondary btn-sm">Change Assignment</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No batches have been created for this class yet.</p>
+    {% endif %}
+
+    {% if not unbatched_students and not batches %}
+    <div class="alert alert-info">
+        <p class="mb-0">Please upload students first to create batches.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

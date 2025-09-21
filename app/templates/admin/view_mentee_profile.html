@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}View Mentee: {{ mentee_user.name }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+        align-items: start;
+    }
+    .profile-picture.large {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--primary-color);
+        margin: 1rem auto;
+        display: block;
+    }
+    .detail-group {
+        margin-bottom: 1.25rem;
+    }
+    .detail-group label {
+        font-weight: 600;
+        color: var(--light-text-color);
+        display: block;
+        font-size: 0.9em;
+        margin-bottom: 0.25rem;
+    }
+    .detail-group p {
+        margin: 0;
+        font-size: 1.1em;
+    }
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    .section-title {
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set mentee_profile = mentee_user.mentee_profile %}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>Mentee Profile: {{ mentee_user.name }}</h1>
+    <div>
+        <a href="{{ url_for('admin.view_users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to All Users
+        </a>
+        <a href="{{ url_for('admin.download_mentee_report', user_id=mentee_user.id) }}" class="btn btn-primary">
+            <i class="fas fa-file-pdf"></i> Download Full Report
+        </a>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="card">
+        <h3>Profile Picture</h3>
+        <img src="{{ mentee_user.profile_picture }}" alt="Profile Picture" class="profile-picture large">
+    </div>
+
+    <div class="card">
+        <h3 class="section-title">Personal and Academic Details</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Name</label><p>{{ mentee_user.name }}</p></div>
+            <div class="detail-group"><label>Email</label><p>{{ mentee_user.email or 'Not Provided' }}</p></div>
+            <div class="detail-group"><label>Registration No.</label><p>{{ mentee_profile.reg_num }}</p></div>
+            <div class="detail-group"><label>Year of Joining</label><p>{{ mentee_profile.year_of_joining or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Programme</label><p>{{ mentee_profile.programme or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Department</label><p>{{ mentee_profile.department or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Class</label><p>{{ mentee_profile.assigned_class.name if mentee_profile.assigned_class else 'N/A' }}</p></div>
+            <div class="detail-group"><label>Batch</label><p>{{ mentee_profile.batch.name if mentee_profile.batch else 'N/A' }}</p></div>
+            <div class="detail-group"><label>Date of Birth</label><p>{{ mentee_profile.dob.strftime('%d-%m-%Y') if mentee_profile.dob else 'N/A' }}</p></div>
+            <div class="detail-group"><label>Age</label><p>{{ mentee_profile.age or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Blood Group</label><p>{{ mentee_profile.blood_group or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Personal Cell No.</label><p>{{ mentee_profile.personal_cell or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Residential Phone No.</label><p>{{ mentee_profile.residential_phone or 'N/A' }}</p></div>
+        </div>
+
+        <h3 class="section-title">Family Details</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Father's Name</label><p>{{ mentee_profile.father_name or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Father's Occupation</label><p>{{ mentee_profile.father_occupation or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Father's Phone</label><p>{{ mentee_profile.father_phone or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Father's Email</label><p>{{ mentee_profile.father_email or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Mother's Name</label><p>{{ mentee_profile.mother_name or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Mother's Occupation</label><p>{{ mentee_profile.mother_occupation or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Mother's Phone</label><p>{{ mentee_profile.mother_phone or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Mother's Email</label><p>{{ mentee_profile.mother_email or 'N/A' }}</p></div>
+        </div>
+        
+        <h3 class="section-title">Residential Information</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Residence Type</label><p>{{ mentee_profile.local_residence_type or 'N/A' }}</p></div>
+             <div class="detail-group" style="grid-column: span 2;"><label>Address</label><p>{{ mentee_profile.residence_address or 'N/A' }}</p></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

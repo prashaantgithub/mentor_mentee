@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}My Requests{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>My Requests</h1>
+    <p>Track the status of your requests to mentors and admins.</p>
+</div>
+
+<div class="card">
+    <h2>Reschedule Requests</h2>
+    <div id="reschedule-request-list">
+        <p>Loading...</p>
+    </div>
+</div>
+{% endblock %}
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const rescheduleList = document.getElementById('reschedule-request-list');
+    
+    async function loadRequests() {
+        const response = await fetch('/api/mentee/my_requests');
+        const data = await response.json();
+        rescheduleList.innerHTML = '';
+
+        if (data.success && data.requests.length > 0) {
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            table.innerHTML = `<thead><tr><th>Meeting</th><th>Status</th><th>Requested Time</th></tr></thead><tbody></tbody>`;
+            const tbody = table.querySelector('tbody');
+            data.requests.forEach(req => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${req.title}</td>
+                        <td><span class="badge badge-${req.status}">${req.status}</span></td>
+                        <td>${new Date(req.requested_time).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            rescheduleList.appendChild(table);
+        } else {
+            rescheduleList.innerHTML = '<p>You have no pending or recent reschedule requests.</p>';
+        }
+    }
+    loadRequests();
+});
+</script>
+<style>
+    .badge.pending { background-color: var(--warning-color); color: #000; }
+    .badge.approved { background-color: var(--accent-color); color: #fff; }
+    .badge.declined { background-color: var(--danger-color); color: #fff; }
+</style>
+{% endblock %}

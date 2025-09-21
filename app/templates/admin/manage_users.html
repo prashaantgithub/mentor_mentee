@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>User Management</h1>
+    <div>
+        <select id="role-filter" class="form-control" style="display:inline-block; width: auto; margin-right: 15px;">
+            <option value="all">All Roles</option>
+            <option value="admin">Admins</option>
+            <option value="mentor">Mentors</option>
+            <option value="mentee">Mentees</option>
+        </select>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create New User</a>
+    </div>
+</div>
+<div class="card">
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr><th>Name</th><th>ID / Username</th><th>Email</th><th>Role</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="user-list-body"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userListBody = document.getElementById('user-list-body');
+    const roleFilter = document.getElementById('role-filter');
+
+    async function fetchAndRenderUsers() {
+        if (!userListBody) return;
+        const selectedRole = roleFilter.value;
+        const response = await fetch(`/api/admin/users?role=${selectedRole}`);
+        const data = await response.json();
+        userListBody.innerHTML = '';
+        if (data.success && data.users.length > 0) {
+            data.users.forEach(user => {
+                userListBody.innerHTML += `<tr>
+                    <td>${user.name}</td><td>${user.username}</td><td>${user.email}</td>
+                    <td><span class="badge badge-${user.role}">${user.role}</span></td>
+                    <td><button class="btn btn-danger btn-sm delete-btn" data-id="${user.id}" data-name="${user.name}">Delete</button></td>
+                </tr>`;
+            });
+        } else {
+            userListBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users found for this filter.</td></tr>';
+        }
+    }
+
+    if (roleFilter) {
+        roleFilter.addEventListener('change', fetchAndRenderUsers);
+    }
+    
+    userListBody.addEventListener('click', e => {
+        if (e.target.classList.contains('delete-btn')) {
+            const userId = e.target.dataset.id;
+            const userName = e.target.dataset.name;
+            if (confirm(`Are you sure you want to permanently delete ${userName}? This cannot be undone.`)) {
+                fetch(`/api/admin/user/${userId}/delete`, { method: 'POST' })
+                    .then(() => fetchAndRenderUsers());
+            }
+        }
+    });
+
+    fetchAndRenderUsers();
+});
+</script>
+{% endblock %}

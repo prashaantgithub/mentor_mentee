@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MentorConnect{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}" data-user-role="{{ current_user.role if current_user.is_authenticated else '' }}" class="{% if current_user.is_authenticated %}watermark-background{% endif %}">
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header" style="padding: 0;">
+                <a href="{{ url_for('main.index') }}" class="sidebar-logo">
+                    <img src="{{ url_for('static', filename='img/christ_logo.jpg') }}" alt="College Logo" style="width: 100%; height: auto; display: block;">
+                 </a>
+            </div>
+            <nav class="sidebar-nav">
+                {% if current_user.is_authenticated %}
+                <ul>
+                    {% if current_user.role == 'admin' %}
+                        <li><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('admin.manage_classes') }}"><i class="fas fa-school"></i><span>Classes</span></a></li>
+                        <li><a href="{{ url_for('admin.manage_mentors') }}"><i class="fas fa-chalkboard-teacher"></i><span>Mentors</span></a></li>
+                        <li><a href="{{ url_for('admin.view_users') }}"><i class="fas fa-users-cog"></i><span>View Users</span></a></li>
+                        <li><a href="{{ url_for('admin.completed_sessions') }}"><i class="fas fa-history"></i><span>Completed Sessions</span></a></li>
+                    {% elif current_user.role == 'mentor' %}
+                        <li><a href="{{ url_for('mentor.dashboard') }}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('mentor.sessions') }}"><i class="fas fa-chalkboard-teacher"></i><span>My Sessions</span></a></li>
+                        <li><a href="{{ url_for('mentor.leave_requests') }}"><i class="fas fa-user-clock"></i><span>Leave Requests</span></a></li>
+                        <li><a href="{{ url_for('mentor.my_batches') }}"><i class="fas fa-users"></i><span>My Batches</span></a></li>
+                        <li><a href="{{ url_for('mentor.completed_sessions') }}"><i class="fas fa-history"></i><span>Completed Sessions</span></a></li>
+                    {% elif current_user.role == 'mentee' %}
+                        <li><a href="{{ url_for('mentee.dashboard') }}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('mentee.completed_sessions') }}"><i class="fas fa-history"></i><span>Completed Sessions</span></a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('main.profile') }}"><i class="fas fa-user-circle"></i><span>Profile</span></a></li>
+                </ul>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}" class="logout-link">
+                    <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        <div class="main-content-wrapper">
+            <header class="top-bar">
+                <div class="top-bar-actions">
+                    <button id="theme-toggle" class="icon-btn" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+                    <div class="notification-icon-container">
+                        <button id="notification-bell" class="icon-btn" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span id="notification-count" class="notification-count" style="display:none;">0</span>
+                        </button>
+                        <div id="notification-dropdown" class="notification-dropdown">
+                            <div class="notification-header"><h3>Notifications</h3></div>
+                            <ul id="notification-list" class="notification-list"><li>No new notifications</li></ul>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main class="main-content">
+                <div class="container">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}{% for category, message in messages %}<div class="message {{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+                    {% endwith %}
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal fade" id="appModal" tabindex="-1" aria-labelledby="appModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="appModalLabel">Modal title</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="appModalBody">
+                    Loading...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block body_extra %}{% endblock %}
+</body>
+</html>

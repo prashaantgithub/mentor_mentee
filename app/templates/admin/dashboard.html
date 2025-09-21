@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Admin Dashboard</h1>
+</div>
+<div class="card">
+    <p>Welcome, {{ current_user.name }}. Use the sidebar to manage the system.</p>
+</div>
+{% endblock %}

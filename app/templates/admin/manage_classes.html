@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Manage Classes{% endblock %}
+
+{% block head_extra %}
+<style>
+    .status-badge {
+        padding: 0.25em 0.6em;
+        font-size: 0.8em;
+        font-weight: 600;
+        border-radius: 0.25rem;
+        color: #fff;
+    }
+    .status-assigned { background-color: #28a745; }
+    .status-unassigned { background-color: #fd7e14; }
+    .actions-cell form {
+        display: inline-block;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Manage Classes</h1>
+</div>
+
+<div class="grid-container" style="grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+    <div class="card">
+        <h3>Create a New Class</h3>
+        <form action="{{ url_for('admin.manage_classes') }}" method="POST">
+            <div class="form-group">
+                <label for="class_name">Class Name</label>
+                <input type="text" id="class_name" name="class_name" class="form-control" placeholder="e.g., 3rd SEM BTAIML" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Existing Classes</h3>
+        {% if classes_with_status %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Total Students</th>
+                        <th>Batches Created</th>
+                        <th>Mentor Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in classes_with_status %}
+                    {% set c = item.class_obj %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td>{{ c.mentees.count() }}</td>
+                        <td>{{ c.batches.count() }}</td>
+                        <td>
+                            {% if c.batches.count() == 0 %}
+                                <span class="text-muted">No Batches</span>
+                            {% elif item.unassigned_count > 0 %}
+                                <span class="status-badge status-unassigned">{{ item.unassigned_count }} Unassigned</span>
+                            {% else %}
+                                <span class="status-badge status-assigned">All Assigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right actions-cell">
+                            <a href="{{ url_for('admin.manage_class', class_id=c.id) }}" class="btn btn-secondary btn-sm">Manage</a>
+                            <form action="{{ url_for('admin.delete_class', class_id=c.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete the class \'{{ c.name }}\'? This will delete all associated students, batches, and assignments. This action cannot be undone.');">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">No classes have been created yet. Use the form on the left to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

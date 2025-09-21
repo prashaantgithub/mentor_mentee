@@ -1,0 +1,90 @@
+.card-header-with-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.card-header-with-filters h2 {
+    margin: 0;
+}
+
+.session-filters {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.sessions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.session-info-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    transition: box-shadow 0.3s ease;
+}
+
+.session-info-card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.session-info-card__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.session-info-card__icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    background-color: var(--primary-light-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.session-info-card__title h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.session-info-card__title span {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.session-info-card__body {
+    padding: 1rem 0;
+    flex-grow: 1;
+}
+
+.session-info-card__body p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.session-info-card__footer {
+    margin-top: auto;
+}
+
+#no-upcoming-sessions-found {
+    display: none; 
+    width: 100%;
+    text-align: center;
+    padding: 2rem;
+}

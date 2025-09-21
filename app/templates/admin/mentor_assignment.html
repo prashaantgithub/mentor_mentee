@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Assign Mentor to {{ target_class.name }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    .assignment-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        align-items: flex-start;
+    }
+    .mentor-info, .batch-info {
+        font-size: 0.9em;
+        color: var(--light-text-color);
+    }
+    .form-section {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Assign Mentor for Class: {{ target_class.name }}</h1>
+</div>
+
+<div class="card">
+    <form action="{{ url_for('admin.assign_mentor', class_id=target_class.id) }}" method="POST" id="assignment-form">
+        <div class="assignment-container">
+            <div>
+                <h4>1. Select a Batch</h4>
+                <div class="form-group">
+                    <label for="batch_id">Unassigned Batches</label>
+                    <select name="batch_id" id="batch_id" class="form-select" required>
+                        <option value="">-- Select a Batch --</option>
+                        {% for batch in batches %}
+                            <option value="{{ batch.id }}" data-mentee-count="{{ batch.mentees.count() }}">
+                                {{ batch.name }} ({{ batch.mentees.count() }} students)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <h4>2. Select a Mentor</h4>
+                <div class="form-group">
+                    <label for="mentor_id">Available Mentors</label>
+                    <select name="mentor_id" id="mentor_id" class="form-select" required>
+                        <option value="">-- Select a Mentor --</option>
+                        {% for data in mentors_data %}
+                            <option value="{{ data.mentor.id }}"
+                                    data-mentee-count="{{ data.mentee_count }}"
+                                    data-assigned-classes="{{ (data.assigned_classes | join(',')) if data.assigned_classes else '' }}">
+                                {{ data.mentor.name }} (Current mentees: {{ data.mentee_count }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="mentor-warning" class="alert alert-danger" style="display: none; margin-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h4>3. Set Session Schedule</h4>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="start-date" class="form-label">Start Date</label>
+                    <input type="date" name="start_date" id="start-date" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="day-of-week" class="form-label">Day of Week</label>
+                    <select name="day_of_week" id="day-of-week" class="form-select" required>
+                        <option value="0">Monday</option>
+                        <option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option>
+                        <option value="3">Thursday</option>
+                        <option value="4">Friday</option>
+                        <option value="5">Saturday</option>
+                    </select>
+                </div>
+                 <div class="col-md-3">
+                    <label for="time" class="form-label">Time</label>
+                    <input type="time" name="time" id="time" class="form-control" value="11:00" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="num-weeks" class="form-label">Number of Sessions</label>
+                    <input type="number" name="num_weeks" id="num-weeks" class="form-control" min="1" value="12" required>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-right mt-3">
+            <a href="{{ url_for('admin.manage_class', class_id=target_class.id) }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" id="submit-button" class="btn btn-primary" disabled>Assign & Schedule</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mentorSelect = document.getElementById('mentor_id');
+    const batchSelect = document.getElementById('batch_id');
+    const submitButton = document.getElementById('submit-button');
+    const warningDiv = document.getElementById('mentor-warning');
+    const targetClassId = JSON.parse('{{ target_class.id | tojson }}'); 
+    const MENTEE_LIMIT = 45;
+
+    function validateAssignment() {
+        const selectedMentor = mentorSelect.options[mentorSelect.selectedIndex];
+        const selectedBatch = batchSelect.options[batchSelect.selectedIndex];
+        
+        warningDiv.style.display = 'none';
+        warningDiv.textContent = '';
+        
+        if (!selectedMentor.value || !selectedBatch.value) {
+            submitButton.disabled = true;
+            return;
+        }
+
+        const mentorMenteeCount = parseInt(selectedMentor.getAttribute('data-mentee-count'), 10);
+        const batchMenteeCount = parseInt(selectedBatch.getAttribute('data-mentee-count'), 10);
+
+        const mentorAssignedClasses = (selectedMentor.getAttribute('data-assigned-classes') || '')
+            .split(',')
+            .filter(s => s.trim() !== '')
+            .map(Number);
+
+        let isValid = true;
+
+        // Rule 1: Check total mentee cap
+        if (mentorMenteeCount + batchMenteeCount > MENTEE_LIMIT) {
+            warningDiv.textContent = `Mentor already has ${mentorMenteeCount} mentees. Adding this batch of ${batchMenteeCount} would exceed the limit of ${MENTEE_LIMIT}.`;
+            warningDiv.style.display = 'block';
+            isValid = false;
+        }
+
+        // Rule 2: Check if mentor is already assigned to this class
+        if (mentorAssignedClasses.includes(targetClassId)) {
+            warningDiv.textContent += (warningDiv.textContent ? ' ' : '') + 'This mentor is already assigned to another batch in this class.';
+            warningDiv.style.display = 'block';
+            isValid = false;
+        }
+
+        submitButton.disabled = !isValid;
+    }
+
+    mentorSelect.addEventListener('change', validateAssignment);
+    batchSelect.addEventListener('change', validateAssignment);
+});
+</script>
+{% endblock %}

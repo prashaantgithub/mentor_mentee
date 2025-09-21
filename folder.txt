@@ -1,0 +1,91 @@
+mentor_mentee_system/
+├── .venv/
+├── migrations/
+│   ├── versions/
+│   │   └── ... (migration scripts including "Add mentor cabin details")
+│   ├── alembic.ini
+│   └── env.py
+│
+├── app/
+│   ├── __init__.py                (Updated for Blueprint registration and utils import)
+│   ├── events.py
+│   ├── models.py                  (Updated for MentorProfile cabin details)
+│   ├── utils/                     <-- THIS IS NOW A DIRECTORY (Python Package)
+│   │   ├── __init__.py            (Your old app/utils.py, now the package's __init__)
+│   │   └── report_generator.py    (New file, contains ReportPDF class and generate_mentee_full_report)
+│   │
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── admin_routes.py        (Updated for session_details logic)
+│   │   ├── api_routes.py          (Updated for boolean conversion, new get_attendance)
+│   │   ├── auth_routes.py         (Updated for new login page logic)
+│   │   ├── main_routes.py         (Updated for index route, profile POST handling)
+│   │   ├── mentee_routes.py       (Updated for dashboard modals, calls report_generator)
+│   │   └── mentor_routes.py       (Updated to call report_generator)
+│   │
+│   ├── static/
+│   │   ├── css/
+│   │   │   ├── assignment.css
+│   │   │   ├── auth.css           (New CSS for login page, password fix)
+│   │   │   ├── live_session.css
+│   │   │   ├── sessions.css
+│   │   │   └── style.css          (Restored core layout, minor fixes)
+│   │   │
+│   │   ├── img/                   <-- UPDATED: Contains your landing page images and watermark
+│   │   │   ├── college-logo.png
+│   │   │   ├── slide1.jpg
+│   │   │   ├── slide2.jpg
+│   │   │   ├── slide3.jpg
+│   │   │   ├── mentor1.jpg
+│   │   │   ├── ... (other mentor images)
+│   │   │   ├── default_profile.png
+│   │   │   ├── profiles/          (User-uploaded profile pictures)
+│   │   │   │   └── ...
+│   │   │   └── watermark.png      (New: Watermark image for PDFs)
+│   │   │
+│   │   └── js/
+│   │       ├── admin.js
+│   │       ├── assignment.js
+│   │       ├── auth.js
+│   │       ├── live_session.js
+│   │       ├── main.js            (Updated for theme toggle, notifications, general helpers)
+│   │       ├── mentee.js
+│   │       ├── profile.js         (New JS for password toggle, profile pic preview, API calls)
+│   │       └── requests.js
+│   │
+│   └── templates/
+│       ├── admin/
+│       │   ├── confirm_import.html
+│       │   ├── dashboard.html
+│       │   ├── edit_assignment.html
+│       │   ├── manage_class.html
+│       │   ├── manage_classes.html
+│       │   ├── manual_batch_assignment.html
+│       │   └── mentor_assignment.html
+│       │
+│       ├── auth/
+│       │   └── login.html         (New login page, replaced old login form)
+│       │
+│       ├── mentee/
+│       │   ├── dashboard.html     (Updated for card layout, modal buttons)
+│       │   └── session_details.html
+│       │
+│       ├── mentor/
+│       │   ├── dashboard.html
+│       │   ├── leave_requests.html
+│       │   ├── live_session.html
+│       │   ├── my_batches.html
+│       │   └── view_mentee.html
+│       │
+│       ├── base.html              (Updated for Bootstrap, corrected profile_page URL)
+│       ├── completed_sessions.html
+│       ├── index.html             (New landing page)
+│       ├── profile.html           (Updated for mentor cabin form, profile pic upload)
+│       ├── report_template.html
+│       └── session_details.html   (Shared between mentor and admin, updated for common data structure)
+│
+├── .env
+├── config.py                      (Make sure LOCAL_TIMEZONE is set there or in utils/__init__.py)
+├── flask_app.py                   (Your app instance creation - may point to app/__init__.py's create_app)
+├── requirements.txt
+└── run.py

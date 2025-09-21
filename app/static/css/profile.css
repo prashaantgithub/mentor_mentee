@@ -1,0 +1,125 @@
+.profile-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.profile-card {
+    max-width: 800px;
+    width: 100%;
+    padding: 40px;
+    background-color: var(--surface-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px var(--shadow-color);
+    text-align: center;
+}
+
+.profile-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+}
+
+.profile-picture.large {
+    width: 120px;
+    height: 120px;
+    border-width: 4px;
+    margin-bottom: 15px;
+}
+
+.profile-header h2 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.profile-header .role-text {
+    font-size: 1.1rem;
+    color: var(--light-text-color);
+    font-weight: 500;
+}
+
+.profile-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.detail-item {
+    padding: 15px 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-item label {
+    font-weight: 600;
+    color: var(--text-color);
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.profile-details input[readonly] {
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+    cursor: default;
+    opacity: 0.8;
+}
+
+.profile-details input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-details input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+#profile-form .btn-block {
+    margin-top: 20px;
+}
+
+#change-password-form {
+    margin-top: 40px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 30px;
+}
+
+#change-password-form h3 {
+    margin-bottom: 25px;
+    color: var(--text-color);
+}
+
+#change-password-form .form-group {
+    text-align: left;
+}
+
+#change-password-form .btn-block {
+    margin-top: 20px;
+    background-color: var(--secondary-color);
+}
+#change-password-form .btn-block:hover {
+    background-color: #5a6268;
+}
+
+@media (max-width: 768px) {
+    .profile-card {
+        padding: 25px;
+    }
+    .profile-details {
+        grid-template-columns: 1fr;
+    }
+}

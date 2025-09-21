@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Review Student Import{% endblock %}
+
+{% block head_extra %}
+<style>
+    .error-list {
+        list-style-type: none;
+        padding-left: 0;
+        margin: 0;
+    }
+    .error-list li {
+        color: var(--danger-color);
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Review Student Import</h1>
+    <a href="{{ url_for('admin.manage_class', class_id=class_id) }}" class="btn btn-secondary">
+        <i class="fas fa-times"></i> Cancel Import
+    </a>
+</div>
+
+<form action="{{ url_for('admin.confirm_student_import', class_id=class_id) }}" method="POST">
+
+    {% if valid_students %}
+    <div class="card">
+        <h3><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Valid Students to be Imported ({{ valid_students|length }})</h3>
+        <p>The following students will be created and added to the class.</p>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reg. No</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in valid_students %}
+                    <tr>
+                        <td>{{ student.Reg_num }}</td>
+                        <td>{{ student.Name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if invalid_rows %}
+    <div class="card mt-3">
+        <h3><i class="fas fa-exclamation-triangle" style="color: var(--danger-color);"></i> Rows with Errors - Will be Skipped ({{ invalid_rows|length }})</h3>
+        <p>The following rows contain errors and will not be imported. Please correct them in your source file and re-upload if necessary.</p>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reg. No</th>
+                        <th>Name</th>
+                        <th>Errors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in invalid_rows %}
+                    <tr>
+                        <td>{{ row.data.Reg_num }}</td>
+                        <td>{{ row.data.Name }}</td>
+                        <td>
+                            <ul class="error-list">
+                                {% for error in row.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if db_duplicates %}
+    <div class="card mt-3">
+        <h3><i class="fas fa-copy" style="color: var(--primary-color);"></i> Duplicates Found in Database - Will be Skipped ({{ db_duplicates|length }})</h3>
+        <p>The following students are already in the system and will not be imported again.</p>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reg. No</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in db_duplicates %}
+                    <tr>
+                        <td>{{ student.Reg_num }}</td>
+                        <td>{{ student.Name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mt-3 text-center">
+        {% if valid_students %}
+            <p>Please review the lists above. Only valid students will be imported.</p>
+            <button type="submit" class="btn btn-primary btn-lg">Confirm and Import {{ valid_students|length }} Students</button>
+        {% else %}
+            <div class="alert alert-warning">
+                <p class="mb-0">No new valid students to import. Please check the errors above or upload a different file.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</form>
+{% endblock %}

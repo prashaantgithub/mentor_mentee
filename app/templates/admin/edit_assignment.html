@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Edit Assignment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Edit Assignment for {{ assignment.batch.class_model.name }} - {{ assignment.batch.name }}</h1>
+    <a href="{{ url_for('admin.manage_class', class_id=assignment.batch.class_id) }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Manage Class
+    </a>
+</div>
+
+<div class="card">
+    <h3>Current Assignment Details</h3>
+    <div class="detail-group">
+        <label>Currently Assigned Mentor:</label>
+        <p><strong>{{ assignment.mentor.name }}</strong></p>
+    </div>
+    <div class="detail-group">
+        <label>Upcoming Sessions:</label>
+        {% if upcoming_sessions %}
+            <ul class="session-list">
+            {% for session in upcoming_sessions %}
+                <li>Session {{ session.session_number }} on {{ session.start_time|timestamp_to_local('full') }}</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>No upcoming sessions found for this assignment.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; margin-top: 2rem;">
+    <div class="card">
+        <h3>Reschedule Sessions</h3>
+        <p>Update the schedule for the current mentor, <strong>{{ assignment.mentor.name }}</strong>. The old schedule will be replaced.</p>
+        <form method="POST" action="{{ url_for('admin.update_assignment', assignment_id=assignment.id) }}" onsubmit="return confirm('Are you sure you want to create a new schedule for this mentor? The old one will be deleted.')">
+            <input type="hidden" name="action" value="reschedule">
+            
+            <div class="form-group">
+                <label for="reschedule-start-date">New Start Date</label>
+                <input type="date" id="reschedule-start-date" name="start_date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="reschedule-day-of-week">New Day of Week</label>
+                <select id="reschedule-day-of-week" name="day_of_week" class="form-control" required>
+                    <option value="0">Monday</option>
+                    <option value="1">Tuesday</option>
+                    <option value="2">Wednesday</option>
+                    <option value="3">Thursday</option>
+                    <option value="4">Friday</option>
+                    <option value="5">Saturday</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reschedule-time">New Time</label>
+                <input type="time" id="reschedule-time" name="time" class="form-control" value="11:00" required>
+            </div>
+            <div class="form-group">
+                <label for="reschedule-num-weeks">New Number of Weeks</label>
+                <input type="number" id="reschedule-num-weeks" name="num_weeks" class="form-control" min="1" value="12" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Update Schedule</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Reassign to a New Mentor</h3>
+        <p>Select a different mentor and set their schedule. The old assignment will be completely replaced.</p>
+        <form method="POST" action="{{ url_for('admin.update_assignment', assignment_id=assignment.id) }}" onsubmit="return confirm('Are you sure you want to reassign to a new mentor? The old assignment and schedule will be deleted.')">
+            <input type="hidden" name="action" value="reassign">
+            
+            <div class="form-group">
+                <label for="reassign-mentor-id">New Mentor</label>
+                <select id="reassign-mentor-id" name="mentor_id" class="form-control" required>
+                    <option value="">Select a new mentor...</option>
+                    {% for mentor in mentors %}
+                        {% if mentor.id != assignment.mentor_id %}
+                            <option value="{{ mentor.id }}">{{ mentor.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="reassign-start-date">New Start Date</label>
+                <input type="date" id="reassign-start-date" name="start_date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="reassign-day-of-week">New Day of Week</label>
+                <select id="reassign-day-of-week" name="day_of_week" class="form-control" required>
+                    <option value="0">Monday</option>
+                    <option value="1">Tuesday</option>
+                    <option value="2">Wednesday</option>
+                    <option value="3">Thursday</option>
+                    <option value="4">Friday</option>
+                    <option value="5">Saturday</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reassign-time">New Time</label>
+                <input type="time" id="reassign-time" name="time" class="form-control" value="11:00" required>
+            </div>
+            <div class="form-group">
+                <label for="reassign-num-weeks">New Number of Weeks</label>
+                <input type="number" id="reassign-num-weeks" name="num_weeks" class="form-control" min="1" value="12" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Reassign & Set New Schedule</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3 danger-zone">
+    <h3>Danger Zone</h3>
+    <form method="POST" action="{{ url_for('admin.update_assignment', assignment_id=assignment.id) }}" onsubmit="return confirm('DANGER: Are you sure you want to unassign this mentor and delete all future sessions? This cannot be undone.')">
+        <input type="hidden" name="action" value="unassign">
+        <button type="submit" class="btn btn-danger w-100">Unassign Mentor & Delete Future Sessions</button>
+    </form>
+</div>
+{% endblock %}

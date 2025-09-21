@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Review Mentor Import{% endblock %}
+
+{% block head_extra %}
+<style>
+    .error-list {
+        list-style-type: none;
+        padding-left: 0;
+        margin: 0;
+    }
+    .error-list li {
+        color: var(--danger-color);
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Review Mentor Import</h1>
+    <a href="{{ url_for('admin.manage_mentors') }}" class="btn btn-secondary">
+        <i class="fas fa-times"></i> Cancel Import
+    </a>
+</div>
+
+<form action="{{ url_for('admin.confirm_mentor_import') }}" method="POST">
+
+    {% if valid_mentors %}
+    <div class="card">
+        <h3><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Valid Mentors to be Imported ({{ valid_mentors|length }})</h3>
+        <p>The following mentors will be created with a default password (their first name, lowercase). They will be required to change it and complete their profile on first login.</p>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mentor in valid_mentors %}
+                    <tr>
+                        <td>{{ mentor.Name }}</td>
+                        <td>{{ mentor.level }}</td>
+                        <td>{{ mentor.Email }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if invalid_rows %}
+    <div class="card mt-3">
+        <h3><i class="fas fa-exclamation-triangle" style="color: var(--danger-color);"></i> Rows with Errors - Will be Skipped ({{ invalid_rows|length }})</h3>
+        <p>The following rows contain errors and will not be imported. Please correct them in your source file and re-upload if necessary.</p>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Email</th>
+                        <th>Errors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in invalid_rows %}
+                    <tr>
+                        <td>{{ row.data.Name }}</td>
+                        <td>{{ row.data.level }}</td>
+                        <td>{{ row.data.Email }}</td>
+                        <td>
+                            <ul class="error-list">
+                                {% for error in row.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if db_duplicates %}
+    <div class="card mt-3">
+        <h3><i class="fas fa-copy" style="color: var(--primary-color);"></i> Duplicates Found in Database - Will be Skipped ({{ db_duplicates|length }})</h3>
+        <p>The following mentors (matched by email) are already in the system and will not be imported again.</p>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mentor in db_duplicates %}
+                    <tr>
+                        <td>{{ mentor.Name }}</td>
+                        <td>{{ mentor.level }}</td>
+                        <td>{{ mentor.Email }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mt-3 text-center">
+        {% if valid_mentors %}
+            <p>Please review the lists above. Only valid mentors will be imported.</p>
+            <button type="submit" class="btn btn-primary btn-lg">Confirm and Import {{ valid_mentors|length }} Mentors</button>
+        {% else %}
+            <div class="alert alert-warning">
+                <p class="mb-0">No new valid mentors to import. Please check the errors above or upload a different file.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</form>
+{% endblock %}

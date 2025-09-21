@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block head_extra %}
+<style>
+    .password-wrapper { position: relative; }
+    .password-toggle-icon { position: absolute; top: 50%; right: 15px; transform: translateY(-50%); cursor: pointer; color: var(--light-text-color); }
+    .grid-container { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start; }
+    @media (max-width: 992px) { .grid-container { grid-template-columns: 1fr; } }
+    .w-100 { width: 100%; }
+    .mt-3 { margin-top: 1.5rem; }
+    .profile-picture.large { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; }
+    .detail-group { margin-bottom: 1rem; }
+    .detail-group label { font-weight: 600; color: var(--light-text-color); display: block; font-size: 0.9em; }
+    .detail-group p { margin: 0; font-size: 1.1em; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-section-title { font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>My Profile</h1>
+    {% if current_user.role == 'mentee' %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal"><i class="fas fa-edit"></i> Edit Profile</button>
+    {% elif current_user.role == 'mentor' %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editMentorProfileModal"><i class="fas fa-edit"></i> Edit Profile</button>
+    {% endif %}
+</div>
+
+<div class="grid-container">
+    <div>
+        <div class="card text-center">
+            <h3>Profile Picture</h3>
+            <div class="profile-picture-wrapper mx-auto my-3">
+                <img src="{{ current_user.profile_picture }}" 
+                     alt="Profile Picture" 
+                     class="profile-picture large"
+                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/default_profile.png') }}';">
+            </div>
+            <form action="{{ url_for('main.profile') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="upload_picture">
+                <div class="form-group"><label for="profile_pic">Upload New Picture</label><input type="file" id="profile_pic" name="profile_pic" class="form-control" accept="image/*" required></div>
+                <button type="submit" class="btn btn-secondary w-100 mt-2">Upload Picture</button>
+            </form>
+        </div>
+        <div class="card mt-3">
+            <h3>Change Password</h3>
+            <form action="{{ url_for('main.profile') }}" method="POST">
+                <input type="hidden" name="action" value="change_password">
+                <div class="form-group"><label for="current_password">Current Password</label><div class="password-wrapper"><input type="password" id="current_password" name="current_password" class="form-control" required><i class="fas fa-eye password-toggle-icon"></i></div></div>
+                <div class="form-group"><label for="new_password">New Password</label><div class="password-wrapper"><input type="password" id="new_password" name="new_password" class="form-control" minlength="6" required><i class="fas fa-eye password-toggle-icon"></i></div></div>
+                <div class="form-group"><label for="confirm_password">Confirm New Password</label><div class="password-wrapper"><input type="password" id="confirm_password" name="confirm_password" class="form-control" minlength="6" required><i class="fas fa-eye password-toggle-icon"></i></div></div>
+                <button type="submit" class="btn btn-primary w-100 mt-2">Change Password</button>
+            </form>
+        </div>
+    </div>
+    <div class="card">
+        <h3>My Details</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Name</label><p>{{ current_user.name }}</p></div>
+            <div class="detail-group"><label>Email</label><p>{{ current_user.email or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Role</label><p>{{ current_user.role|capitalize }}</p></div>
+        </div>
+        
+        {% if current_user.role == 'mentor' and current_user.mentor_profile %}
+        <hr>
+        <div class="details-grid">
+            <div class="detail-group"><label>Department</label><p>{{ current_user.mentor_profile.department or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Level</label><p>{{ current_user.mentor_profile.level or 'N/A' }}</p></div>
+        </div>
+        <hr>
+        <h3>Cabin Details</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Block</label><p>{{ current_user.mentor_profile.cabin_block or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Floor</label><p>{{ current_user.mentor_profile.cabin_floor or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Cabin Number</label><p>{{ current_user.mentor_profile.cabin_number or 'N/A' }}</p></div>
+        </div>
+        {% endif %}
+
+        {% if current_user.role == 'mentee' and current_user.mentee_profile %}
+        <hr>
+        <div class="details-grid">
+            <div class="detail-group"><label>Registration Number</label><p>{{ current_user.mentee_profile.reg_num }}</p></div>
+            <div class="detail-group"><label>Class</label><p>{{ current_user.mentee_profile.assigned_class.name if current_user.mentee_profile.assigned_class else 'N/A' }}</p></div>
+            <div class="detail-group"><label>Batch</label><p>{{ current_user.mentee_profile.batch.name if current_user.mentee_profile.batch else 'N/A' }}</p></div>
+            <div class="detail-group"><label>Date of Birth</label><p>{{ current_user.mentee_profile.dob.strftime('%d-%m-%Y') if current_user.mentee_profile.dob else 'N/A' }}</p></div>
+            <div class="detail-group"><label>Father's Name</label><p>{{ current_user.mentee_profile.father_name or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Mother's Name</label><p>{{ current_user.mentee_profile.mother_name or 'N/A' }}</p></div>
+        </div>
+        <div class="detail-group">
+            <label>Address</label>
+            <p>{{ current_user.mentee_profile.residence_address or 'N/A' }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if current_user.role == 'mentee' %}
+<!-- Edit Mentee Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit My Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('main.profile') }}" id="edit-profile-form">
+                    <input type="hidden" name="action" value="update_mentee_profile">
+                    <h6 class="form-section-title">Personal and Academic Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Programme *</label><select class="form-select" name="programme" required><option value="BTECH" {% if current_user.mentee_profile.programme == 'BTECH' %}selected{% endif %}>B.Tech</option><option value="MTECH" {% if current_user.mentee_profile.programme == 'MTECH' %}selected{% endif %}>M.Tech</option></select></div>
+                        <div class="col-md-6"><label class="form-label">Department *</label><select class="form-select" name="department" required><option value="Computer Science and Engineering" {% if current_user.mentee_profile.department == 'Computer Science and Engineering' %}selected{% endif %}>Computer Science and Engineering</option><option value="AIML & DS" {% if current_user.mentee_profile.department == 'AIML & DS' %}selected{% endif %}>AIML & DS</option><option value="Information Technology" {% if current_user.mentee_profile.department == 'Information Technology' %}selected{% endif %}>Information Technology</option><option value="Electronics and Communication Engineering" {% if current_user.mentee_profile.department == 'Electronics and Communication Engineering' %}selected{% endif %}>Electronics and Communication Engineering</option><option value="Mechanical Engineering" {% if current_user.mentee_profile.department == 'Mechanical Engineering' %}selected{% endif %}>Mechanical Engineering</option><option value="Civil Engineering" {% if current_user.mentee_profile.department == 'Civil Engineering' %}selected{% endif %}>Civil Engineering</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Date of Birth *</label><input type="date" class="form-control" name="dob" value="{{ current_user.mentee_profile.dob.strftime('%Y-%m-%d') if current_user.mentee_profile.dob else '' }}" required></div>
+                        <div class="col-md-4"><label class="form-label">Age *</label><input type="number" class="form-control" name="age" value="{{ current_user.mentee_profile.age or '' }}" required></div>
+                        <div class="col-md-4"><label class="form-label">Blood Group *</label><input type="text" class="form-control" name="blood_group" value="{{ current_user.mentee_profile.blood_group or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Personal Cell No. *</label><input type="text" class="form-control" name="personal_cell" value="{{ current_user.mentee_profile.personal_cell or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Residential Phone No.</label><input type="text" class="form-control" name="residential_phone" value="{{ current_user.mentee_profile.residential_phone or '' }}"></div>
+                    </div>
+                    <h6 class="form-section-title">Family Details</h6>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label">Address</label><textarea name="residence_address" class="form-control">{{ current_user.mentee_profile.residence_address or '' }}</textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" form="edit-profile-form" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if current_user.role == 'mentor' %}
+<div class="modal fade" id="editMentorProfileModal" tabindex="-1" aria-labelledby="editMentorProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editMentorProfileModalLabel">Complete Your Profile</h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning" role="alert">Please complete your profile to continue.</div>
+                <form method="POST" action="{{ url_for('main.profile') }}" id="edit-mentor-profile-form">
+                    <input type="hidden" name="action" value="update_mentor_profile">
+                    <h6 class="form-section-title">Professional Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-12"><label class="form-label">Email *</label><input type="email" class="form-control" name="email" value="{{ current_user.email if '@placeholder.edu' not in current_user.email else '' }}" pattern=".+@christuniversity\.in" title="Please use a valid @christuniversity.in email." required></div>
+                        <div class="col-md-6"><label for="mentor_level" class="form-label">Level *</label><select name="level" id="mentor_level" class="form-select" required><option value="">-- Select Level --</option><option value="BTECH" {% if current_user.mentor_profile.level == 'BTECH' %}selected{% endif %}>BTECH</option><option value="MTECH" {% if current_user.mentor_profile.level == 'MTECH' %}selected{% endif %}>MTECH</option></select></div>
+                        <div class="col-md-6"><label for="mentor_department" class="form-label">Department *</label><select name="department" id="mentor_department" class="form-select" required><option value="">-- Select Department --</option></select></div>
+                    </div>
+                    <h6 class="form-section-title">Cabin Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">Block</label><select name="cabin_block" class="form-select"><option value="">-- Select --</option>{% for i in range(1, 7) %}<option value="Block {{ i }}" {% if current_user.mentor_profile.cabin_block == 'Block ' ~ i %}selected{% endif %}>Block {{ i }}</option>{% endfor %}</select></div>
+                        <div class="col-md-4"><label class="form-label">Floor</label><select name="cabin_floor" class="form-select"><option value="">-- Select --</option><option value="Ground" {% if current_user.mentor_profile.cabin_floor == 'Ground' %}selected{% endif %}>Ground</option><option value="First" {% if current_user.mentor_profile.cabin_floor == 'First' %}selected{% endif %}>First</option><option value="Second" {% if current_user.mentor_profile.cabin_floor == 'Second' %}selected{% endif %}>Second</option><option value="Third" {% if current_user.mentor_profile.cabin_floor == 'Third' %}selected{% endif %}>Third</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Cabin Number</label><input type="text" class="form-control" name="cabin_number" value="{{ current_user.mentor_profile.cabin_number or '' }}"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" form="edit-mentor-profile-form" class="btn btn-primary">Save and Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isMentor = {{ (current_user.role == 'mentor')|tojson }};
+    const needsMentorProfileUpdate = {{ (current_user.role == 'mentor' and current_user.mentor_profile and not current_user.mentor_profile.profile_complete)|tojson }};
+
+    if (isMentor && needsMentorProfileUpdate) {
+        const mentorProfileModalEl = document.getElementById('editMentorProfileModal');
+        if (mentorProfileModalEl) {
+            const mentorProfileModal = new bootstrap.Modal(mentorProfileModalEl, {
+                backdrop: 'static',
+                keyboard: false
+            });
+            mentorProfileModal.show();
+        }
+    }
+
+    document.querySelectorAll('.password-toggle-icon').forEach(icon => {
+        icon.addEventListener('click', function() {
+            const input = this.previousElementSibling;
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    });
+
+    const mentorModal = document.getElementById('editMentorProfileModal');
+    if (mentorModal) {
+        const levelSelect = mentorModal.querySelector('#mentor_level');
+        const departmentSelect = mentorModal.querySelector('#mentor_department');
+        const departments = {
+            BTECH: ['Computer Science and Engineering', 'Electronics and Communication Engineering', 'Mechanical Engineering', 'Civil Engineering', 'Electrical and Electronics Engineering', 'Information Technology', 'AIML&DS', 'ELCS', 'BBA', 'ARCHITECTURE'],
+            MTECH: ['MTECH DS', 'MTECH CSE', 'MTECH CIVIL', 'MBA']
+        };
+        const currentDepartment = "{{ current_user.mentor_profile.department or '' }}";
+
+        function updateDepartmentOptions() {
+            const selectedLevel = levelSelect.value;
+            departmentSelect.innerHTML = '<option value="">-- Select Department --</option>';
+            
+            if (departments[selectedLevel]) {
+                departments[selectedLevel].forEach(dept => {
+                    const option = new Option(dept, dept);
+                    if (dept === currentDepartment) {
+                        option.selected = true;
+                    }
+                    departmentSelect.add(option);
+                });
+            }
+        }
+
+        levelSelect.addEventListener('change', updateDepartmentOptions);
+        updateDepartmentOptions();
+    }
+});
+</script>
+{% endblock %}

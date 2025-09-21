@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}View Mentee - {{ mentee_user.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ mentee_user.name }}'s Profile</h1>
+    {% if mentee_profile.batch %}
+    <a href="{{ url_for('mentor.view_batch', batch_id=mentee_profile.batch.id) }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to {{ mentee_profile.batch.name }}
+    </a>
+    {% endif %}
+</div>
+
+<div class="grid-container" style="grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+    <div class="card text-center">
+        <div class="profile-picture-wrapper mx-auto">
+            <img src="{{ mentee_user.profile_picture }}" 
+                 alt="Profile Picture" 
+                 class="profile-picture large"
+                 onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/default_profile.png') }}';">
+        </div>
+        <h2 class="mt-3">{{ mentee_user.name }}</h2>
+        <p class="text-muted">{{ mentee_user.email }}</p>
+        <a href="{{ url_for('mentor.download_report', user_id=mentee_user.id) }}" class="btn btn-primary w-100 mt-3">
+            <i class="fas fa-file-pdf"></i> Download Full Report (PDF)
+        </a>
+    </div>
+
+    <div class="card">
+        <h3>Academic & Personal Information</h3>
+        <div class="detail-group">
+            <label>Registration No:</label>
+            <p>{{ mentee_profile.reg_num }}</p>
+        </div>
+        <div class="detail-group">
+            <label>Class:</label>
+            <p>{{ mentee_profile.assigned_class.name if mentee_profile.assigned_class else 'N/A' }}</p>
+        </div>
+        <div class="detail-group">
+            <label>Batch:</label>
+            <p>{{ mentee_profile.batch.name if mentee_profile.batch else 'N/A' }}</p>
+        </div>
+        <div class="detail-group">
+            <label>Semester:</label>
+            <p>{{ display_profile.semester or 'N/A' }}</p>
+        </div>
+        <div class="detail-group">
+            <label>GPA:</label>
+            <p>{{ display_profile.gpa if display_profile.gpa is not none else 'N/A' }}</p>
+        </div>
+        <hr>
+        <div class="detail-group">
+            <label>Date of Birth:</label>
+            <p>{{ mentee_profile.dob.strftime('%d %B %Y') if mentee_profile.dob else 'N/A' }}</p>
+        </div>
+        <div class="detail-group">
+            <label>Father's Name:</label>
+            <p>{{ mentee_profile.father_name or 'N/A' }}</p>
+        </div>
+        <div class="detail-group">
+            <label>Mother's Name:</label>
+            <p>{{ mentee_profile.mother_name or 'N/A' }}</p>
+        </div>
+        <div class="detail-group">
+            <label>Address:</label>
+            <p>{{ mentee_profile.residence_address or 'N/A' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

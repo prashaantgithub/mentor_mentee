@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Session Details{% endblock %}
+
+{% block head_extra %}
+<style>
+    .record-card {
+        background-color: var(--surface-color);
+        border-radius: var(--border-radius-md);
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+    }
+    .record-card h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+    .record-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .record-table td {
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .record-table tr:last-child td {
+        border-bottom: none;
+    }
+    .record-table td:first-child {
+        font-weight: 500;
+        color: var(--text-muted);
+        width: 40%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Session Details</h1>
+    <a href="{{ url_for('mentee.completed_sessions') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to History
+    </a>
+</div>
+
+<div class="card">
+    <h3>Session Summary</h3>
+    <p><strong>Mentor:</strong> {{ session.assignment.mentor.name }}</p>
+    <p><strong>Scheduled Time:</strong> {{ session.start_time|timestamp_to_local('full') }}</p>
+    {% if session.actual_start_time %}
+        <p><strong>Actual Start Time:</strong> {{ session.actual_start_time|timestamp_to_local('full') }}</p>
+    {% endif %}
+    {% if session.actual_end_time %}
+        <p><strong>Actual End Time:</strong> {{ session.actual_end_time|timestamp_to_local('full') }}</p>
+    {% endif %}
+</div>
+
+{% if mentee_records %}
+    {% for record_type, records in mentee_records.items() %}
+    <div class="record-card mt-3">
+        <h3>{{ record_type }}</h3>
+        {% for record in records %}
+            <table class="record-table">
+                <tbody>
+                    {% for key, value in record.items() %}
+                        {% if key not in ['id', 'mentee_id', 'session_id'] and value is not none %}
+                        <tr>
+                            <td>{{ key.replace('_', ' ')|title }}</td>
+                            <td>
+                                {% if 'date' in key and value %}
+                                    {{ value.split('T')[0] }}
+                                {% elif key == 'internship_provided' %}
+                                    {{ 'Yes' if value else 'No' }}
+                                {% else %}
+                                    {{ value }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if not loop.last %}<hr>{% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card mt-3">
+        <p>No specific records were added for you during this session.</p>
+    </div>
+{% endif %}
+
+{% endblock %}

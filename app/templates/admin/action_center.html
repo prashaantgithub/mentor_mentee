@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Action Center{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Action Center</h1>
+    <p>Review and approve pending requests from users.</p>
+</div>
+
+<div class="card">
+    <h2>Pending Requests</h2>
+    <div id="request-list">
+        <p>Loading requests...</p>
+    </div>
+</div>
+{% endblock %}
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const requestList = document.getElementById('request-list');
+    
+    async function loadRequests() {
+        const response = await fetch('/api/admin/action_items');
+        const data = await response.json();
+        requestList.innerHTML = '';
+
+        if (data.success && data.requests.length > 0) {
+            data.requests.forEach(req => {
+                const item = document.createElement('div');
+                item.className = 'action-item card';
+                item.innerHTML = `
+                    <h4>${req.type.replace('_', ' ').toUpperCase()}</h4>
+                    <p><strong>Mentor:</strong> ${req.mentor_name}</p>
+                    <p><strong>Mentee:</strong> ${req.mentee_name}</p>
+                    <p><strong>Reason:</strong> ${req.reason || 'N/A'}</p>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-sm approve-btn" data-id="${req.assignment_id}">Approve</button>
+                        <button class="btn btn-danger btn-sm decline-btn" data-id="${req.assignment_id}">Decline</button>
+                    </div>
+                `;
+                requestList.appendChild(item);
+            });
+        } else {
+            requestList.innerHTML = '<p>No pending action items.</p>';
+        }
+    }
+
+    requestList.addEventListener('click', async e => {
+        const assignmentId = e.target.dataset.id;
+        if (!assignmentId) return;
+
+        if (e.target.classList.contains('approve-btn')) {
+            await fetch('/api/admin/approve_unassignment', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ assignment_id: assignmentId })
+            });
+            loadRequests();
+        } else if (e.target.classList.contains('decline-btn')) {
+            const reason = prompt("Please provide a reason for declining this request:");
+            if (reason) {
+                await fetch('/api/admin/decline_unassignment', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ assignment_id: assignmentId, reason: reason })
+                });
+                loadRequests();
+            }
+        }
+    });
+
+    loadRequests();
+});
+</script>
+{% endblock %}

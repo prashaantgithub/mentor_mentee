@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Meeting Scheduler{% endblock %}
+{% block head_extra %}
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <style> 
+        .fc-event { cursor: pointer; } 
+        .fc-event-main { padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+    </style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Meeting Schedule</h1>
+    {% if current_user.role == 'mentor' %}
+    <button id="add-meeting-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Propose One-Time Meeting</button>
+    {% endif %}
+</div>
+<div class="card">
+    <div id="calendar"></div>
+</div>
+
+<div id="propose-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <span class="close-button">×</span>
+        <h2>Propose New One-Time Meeting</h2>
+        <form id="propose-form">
+            <div class="form-group"><label for="meeting-title">Title</label><input type="text" id="meeting-title" required></div>
+            <div class="form-group"><label for="mentee-select">Select Mentee</label><select id="mentee-select" required></select></div>
+            <div class="form-group"><label for="meeting-datetime">Date & Time</label><input type="datetime-local" id="meeting-datetime" required></div>
+            <button type="submit" class="btn btn-primary">Propose Meeting</button>
+        </form>
+    </div>
+</div>
+
+<div id="details-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <span class="close-button">×</span>
+        <h2 id="details-title"></h2>
+        <div id="details-body"></div>
+        <div id="details-actions" class="action-buttons"></div>
+    </div>
+</div>
+
+<div id="reschedule-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <span class="close-button">×</span>
+        <h2 id="reschedule-title">Request Reschedule</h2>
+        <form id="reschedule-form">
+            <input type="hidden" id="reschedule-meeting-id">
+            <input type="hidden" id="original-instance-date">
+            <div class="form-group"><label>New Date & Time</label><input type="datetime-local" id="new-datetime" required></div>
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block body_extra %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const proposeModal = document.getElementById('propose-modal');
+    const detailsModal = document.getElementById('details-modal');
+    const rescheduleModal = document.getElementById('reschedule-modal');
+    const addMeetingBtn = document.getElementById('add-meeting-btn');
+    const currentUserRole = '{{ current_user.role }}';
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+        events: { url: '/api/meetings' },
+        eventClick: async function(info) {
+            const res = await fetch(`/api/meeting/${info.event.id}`);
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('details-title').textContent = info.event.title;
+                document.getElementById('details-body').innerHTML = `<p><strong>Type:</strong> ${data.details.type}</p><p><strong>With:</strong> ${currentUserRole === 'mentor' ? data.details.mentee : data.details.mentor}</p><p><strong>Time:</strong> ${data.details.datetime}</p>`;
+                const actions = document.getElementById('details-actions');
+                let rescheduleText = currentUserRole === 'mentee' ? 'Request Reschedule' : 'Reschedule';
+                actions.innerHTML = `<button class="btn btn-secondary reschedule-btn" data-id="${info.event.id}" data-instance="${info.event.extendedProps.instance_date}">${rescheduleText}</button>
+                                     <button class="btn btn-danger delete-btn" data-id="${info.event.id}">Delete</button>`;
+                detailsModal.style.display = 'flex';
+            }
+        }
+    });
+    calendar.render();
+
+    if (addMeetingBtn) {
+        addMeetingBtn.addEventListener('click', async () => {
+            const res = await fetch('/api/mentor/my_mentees');
+            const data = await res.json();
+            if(data.success) {
+                const menteeSelect = document.getElementById('mentee-select');
+                menteeSelect.innerHTML = '';
+                data.mentees.forEach(m => menteeSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`);
+            }
+            proposeModal.style.display = 'flex';
+        });
+    }
+
+    document.getElementById('propose-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const payload = {
+            title: document.getElementById('meeting-title').value,
+            mentee_id: document.getElementById('mentee-select').value,
+            date_time: document.getElementById('meeting-datetime').value,
+            meeting_type: 'one-time'
+        };
+        const res = await fetch('/api/meeting/propose', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (data.success) {
+            proposeModal.style.display = 'none';
+            calendar.refetchEvents();
+        } else { alert(data.message || 'Failed to propose meeting.'); }
+    });
+
+    document.getElementById('details-actions').addEventListener('click', e => {
+        const meetingId = e.target.dataset.id;
+        if (e.target.classList.contains('reschedule-btn')) {
+            detailsModal.style.display = 'none';
+            document.getElementById('reschedule-meeting-id').value = meetingId;
+            document.getElementById('original-instance-date').value = e.target.dataset.instance;
+            rescheduleModal.style.display = 'flex';
+        } else if (e.target.classList.contains('delete-btn')) {
+            if (confirm('Are you sure? This will delete the meeting for both participants.')) {
+                fetch(`/api/meeting/${meetingId}/delete`, {method: 'POST'})
+                    .then(() => { detailsModal.style.display = 'none'; calendar.refetchEvents(); });
+            }
+        }
+    });
+
+    document.getElementById('reschedule-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const meetingId = document.getElementById('reschedule-meeting-id').value;
+        const payload = {
+            meeting_id: meetingId,
+            new_datetime: document.getElementById('new-datetime').value,
+            original_instance_date: document.getElementById('original-instance-date').value
+        };
+        const url = currentUserRole === 'mentee' ? '/api/meeting/request_reschedule' : '/api/meeting/reschedule';
+        const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        const data = await res.json();
+        alert(data.message);
+        rescheduleModal.style.display = 'none';
+        calendar.refetchEvents();
+    });
+
+    [proposeModal, detailsModal, rescheduleModal].forEach(m => {
+        if(m) {
+            m.querySelector('.close-button').addEventListener('click', () => m.style.display = 'none');
+            m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
+        }
+    });
+});
+</script>
+{% endblock %}

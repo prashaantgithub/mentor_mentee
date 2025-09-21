@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}My Sessions{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sessions.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>My Sessions</h1>
+</div>
+
+<div class="card">
+    <h2><i class="fas fa-satellite-dish"></i> LIVE</h2>
+    {% if live_sessions %}
+        <div class="sessions-grid">
+            {% for session in live_sessions %}
+            <div class="session-info-card">
+                <div class="session-info-card__header">
+                    <div class="session-info-card__icon">
+                        <span>{{ session.session_number }}</span>
+                    </div>
+                    <div class="session-info-card__title">
+                        <h4>{{ session.assignment.batch.class_model.name }} - {{ session.assignment.batch.name }}</h4>
+                        <span>Session {{ session.session_number }}</span>
+                    </div>
+                </div>
+                <div class="session-info-card__body">
+                    <p><strong>Ends at:</strong> {{ (session.start_time + timedelta(hours=1))|timestamp_to_local('short') }}</p>
+                    <p><strong>Mentees:</strong> {{ session.assignment.batch.mentees.count() }}</p>
+                </div>
+                <div class="session-info-card__footer">
+                    <a href="{{ url_for('mentor.live_session', session_id=session.id) }}" class="btn btn-success w-100">Start Session</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No sessions are currently live.</p>
+    {% endif %}
+</div>
+
+<div class="card mt-3">
+    <div class="card-header-with-filters">
+        <h2><i class="fas fa-clock"></i> UPCOMING</h2>
+        <div class="session-filters">
+            <select id="class-filter" class="form-control">
+                <option value="all">Filter by Class...</option>
+                {% for class_name in filter_data.classes %}
+                <option value="{{ class_name }}">{{ class_name }}</option>
+                {% endfor %}
+            </select>
+            <select id="batch-filter" class="form-control">
+                <option value="all">Filter by Batch...</option>
+                {% for batch_name in filter_data.batches %}
+                <option value="{{ batch_name }}">{{ batch_name }}</option>
+                {% endfor %}
+            </select>
+            <select id="day-filter" class="form-control">
+                <option value="all">Filter by Day...</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+            </select>
+            <button id="clear-filters-btn" class="btn btn-secondary btn-sm">Clear</button>
+        </div>
+    </div>
+    
+    {% if upcoming_sessions %}
+        <div class="sessions-grid" id="upcoming-sessions-grid">
+            {% for session in upcoming_sessions %}
+            <div class="session-info-card" 
+                 data-class-name="{{ session.assignment.batch.class_model.name }}" 
+                 data-batch-name="{{ session.assignment.batch.name }}" 
+                 data-day="{{ (session.start_time|timestamp_to_local('full')).split(',')[0] }}">
+                <div class="session-info-card__header">
+                    <div class="session-info-card__icon">
+                        <span>{{ session.session_number }}</span>
+                    </div>
+                    <div class="session-info-card__title">
+                        <h4>{{ session.assignment.batch.class_model.name }} - {{ session.assignment.batch.name }}</h4>
+                        <span>Session {{ session.session_number }}</span>
+                    </div>
+                </div>
+                <div class="session-info-card__body">
+                    <p><strong>Scheduled for:</strong><br>{{ session.start_time|timestamp_to_local('full') }}</p>
+                    <p><strong>Mentees:</strong> {{ session.assignment.batch.mentees.count() }}</p>
+                </div>
+                <div class="session-info-card__footer">
+                    <button class="btn btn-secondary w-100" disabled>Start Session</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <p id="no-upcoming-sessions-found">No upcoming sessions match the selected filters.</p>
+    {% else %}
+        <p>You have no upcoming sessions.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script src="{{ url_for('static', filename='js/sessions.js') }}"></script>
+{% endblock %}

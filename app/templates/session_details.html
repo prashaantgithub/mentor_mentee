@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Session Details{% endblock %}
+
+{% block head_extra %}
+<style>
+    .detail-card {
+        background-color: var(--surface-color);
+        padding: 1.5rem;
+        border-radius: var(--border-radius-md);
+        border: 1px solid var(--border-color);
+    }
+    .mentee-select-group {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    #mentee-details-container { margin-top: 1.5rem; }
+    .record-group { margin-bottom: 1.5rem; }
+    .record-group h4 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+    .record-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .record-table td {
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .record-table tr:last-child td { border-bottom: none; }
+    .record-table td:first-child {
+        font-weight: 500;
+        color: var(--text-muted);
+        width: 40%;
+    }
+    .attendance-status {
+        padding: 1rem;
+        border-radius: var(--border-radius-md);
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+    }
+    .attendance-approved { background-color: var(--success-light-color); color: var(--success-color); }
+    .attendance-absent { background-color: var(--danger-light-color); color: var(--danger-color); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Session Details</h1>
+    <a href="{{ url_for(current_user.role + '.completed_sessions') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to History
+    </a>
+</div>
+
+<div class="card">
+    <h3>Session Summary</h3>
+    <p><strong>Batch:</strong> {{ session.assignment.batch.class_model.name }} - {{ session.assignment.batch.name }}</p>
+    {% if current_user.role != 'mentor' %}<p><strong>Mentor:</strong> {{ session.assignment.mentor.name }}</p>{% endif %}
+    <p><strong>Scheduled Time:</strong> {{ session.start_time|timestamp_to_local('full') }}</p>
+    {% if session.actual_start_time %}<p><strong>Actual Start Time:</strong> {{ session.actual_start_time|timestamp_to_local('full') }}</p>{% endif %}
+    {% if session.actual_end_time %}<p><strong>Actual End Time:</strong> {{ session.actual_end_time|timestamp_to_local('full') }}</p>{% endif %}
+</div>
+
+{% if all_data %}
+<div class="card mt-3">
+    <div class="mentee-select-group">
+        <label for="mentee-select"><strong>View Records for:</strong></label>
+        <select id="mentee-select" class="form-control" style="max-width: 300px;">
+            <option value="">-- Select a mentee --</option>
+            {% for mentee_id, data in all_data.items() %}
+                <option value="{{ mentee_id }}">{{ data.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+<div id="mentee-details-container"></div>
+{% else %}
+<div class="card mt-3">
+    <p>No records were added for any mentee during this session.</p>
+</div>
+{% endif %}
+
+<script id="session-data" type="application/json">
+    {{ all_data|tojson }}
+</script>
+{% endblock %}
+
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const menteeSelect = document.getElementById('mentee-select');
+    if (!menteeSelect) return;
+
+    const menteeDetailsContainer = document.getElementById('mentee-details-container');
+    const allData = JSON.parse(document.getElementById('session-data').textContent);
+    const currentUserRole = "{{ current_user.role }}";
+
+    function formatKey(key) {
+        return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    function formatValue(key, value) {
+        if (value === null || value === undefined) return 'N/A';
+        if ((key.includes('date') || key.includes('at')) && typeof value === 'string' && value) {
+             return new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'});
+        }
+        if (key === 'internship_provided') {
+            return value ? 'Yes' : 'No';
+        }
+        return value;
+    }
+
+    function renderMenteeRecords(menteeId) {
+        menteeDetailsContainer.innerHTML = '';
+        if (!menteeId) return;
+
+        const menteeData = allData[menteeId];
+        let content = '';
+
+        if (menteeData && menteeData.attendance) {
+            const att = menteeData.attendance;
+            let message = '';
+            if (att.status === 'Leave Approved') {
+                if (currentUserRole === 'mentee') {
+                    message = `You applied for leave and it was approved.`;
+                } else {
+                    message = `${menteeData.name} had an approved leave for this session.`;
+                }
+                content += `<div class="card attendance-status attendance-approved"><strong>Status:</strong> ${message}</div>`;
+            } else if (att.status === 'Marked Absent') {
+                 message = `Marked as absent by mentor.`;
+                 content += `<div class="card attendance-status attendance-absent"><strong>Status:</strong> ${message}</div>`;
+            }
+        }
+        
+        if (menteeData && menteeData.records && Object.keys(menteeData.records).length > 0) {
+            const recordsHTML = Object.entries(menteeData.records).map(([recordType, records]) => {
+                let cardContent = `<div class="record-card"><h4>${recordType}</h4>`;
+                records.forEach(record => {
+                    let tableHTML = '<table class="record-table"><tbody>';
+                    for (const [key, value] of Object.entries(record)) {
+                        if (!['id', 'mentee_id', 'session_id'].includes(key) && value !== null) {
+                            tableHTML += `<tr><td>${formatKey(key)}</td><td>${formatValue(key, value)}</td></tr>`;
+                        }
+                    }
+                    tableHTML += '</tbody></table>';
+                    cardContent += tableHTML;
+                });
+                cardContent += `</div>`;
+                return cardContent;
+            }).join('');
+            content += `<div class="details-grid">${recordsHTML}</div>`;
+        } else if (menteeData && menteeData.attendance && menteeData.attendance.status === 'Present') {
+             content += `<div class="card"><p>${menteeData.name} was marked as present, but no specific records were added.</p></div>`;
+        }
+        
+        menteeDetailsContainer.innerHTML = content;
+    }
+
+    menteeSelect.addEventListener('change', () => {
+        renderMenteeRecords(menteeSelect.value);
+    });
+});
+</script>
+{% endblock %}

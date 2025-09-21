@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Review Deletion Request{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Review Deletion Request for {{ mentor.name }}</h1>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--danger-color);">
+    <p>The mentor <strong>{{ mentor.name }} ({{ mentor.username }})</strong> has requested to permanently delete their account. This action cannot be undone.</p>
+    <p>If you proceed, all their currently assigned mentees will become unassigned and will need to be re-assigned. They will receive a notification about this change.</p>
+    
+    <h3 style="margin-top: 20px;">Currently Assigned Mentees:</h3>
+    
+    {% if mentees %}
+        <ul style="list-style: disc; padding-left: 20px; margin-top: 10px;">
+        {% for mentee in mentees %}
+            <li>{{ mentee.name }} ({{ mentee.username }})</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>This mentor has no active mentees.</p>
+    {% endif %}
+
+    <div style="margin-top: 30px; display: flex; gap: 10px;">
+        <button id="confirm-delete-btn" class="btn btn-danger" data-id="{{ mentor.id }}" data-name="{{ mentor.name }}">Confirm and Permanently Delete Account</button>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel and Return</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // This script can be expanded to show a toast message instead of an alert
+    const deleteButton = document.getElementById('confirm-delete-btn');
+    
+    deleteButton.addEventListener('click', function() {
+        const userId = this.dataset.id;
+        const userName = this.dataset.name;
+
+        if (confirm(`Are you absolutely sure you want to permanently delete mentor ${userName}? All their mentees will be unassigned.`)) {
+            fetch(`/api/admin/user/${userId}/delete`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message); // A simple alert for confirmation
+                if (data.success) {
+                    window.location.href = "{{ url_for('admin.manage_users') }}";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while trying to delete the user.');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

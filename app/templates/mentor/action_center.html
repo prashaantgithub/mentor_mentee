@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Action Center{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Action Center</h1></div>
+<div class="card"><div id="request-list"></div></div>
+{% endblock %}
+{% block body_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const requestList = document.getElementById('request-list');
+    
+    async function loadRequests() {
+        const response = await fetch('/api/mentor/action_items');
+        const data = await response.json();
+        requestList.innerHTML = '';
+
+        if (data.success && data.requests.length > 0) {
+            data.requests.forEach(req => {
+                const item = document.createElement('div');
+                item.className = 'action-item card';
+                item.innerHTML = `
+                    <h4>Reschedule Request</h4>
+                    <p><strong>Mentee:</strong> ${req.mentee_name}</p>
+                    <p><strong>Original Time:</strong> ${new Date(req.original_time).toLocaleString()}</p>
+                    <p><strong>Requested Time:</strong> ${new Date(req.requested_time).toLocaleString()}</p>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-sm approve-btn" data-id="${req.meeting_id}">Approve</button>
+                    </div>`;
+                requestList.appendChild(item);
+            });
+        } else {
+            requestList.innerHTML = '<p>No pending action items.</p>';
+        }
+    }
+
+    requestList.addEventListener('click', async e => {
+        if (e.target.classList.contains('approve-btn')) {
+            await fetch('/api/mentor/approve_reschedule', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ meeting_id: e.target.dataset.id })
+            });
+            loadRequests();
+        }
+    });
+
+    loadRequests();
+});
+</script>
+{% endblock %}

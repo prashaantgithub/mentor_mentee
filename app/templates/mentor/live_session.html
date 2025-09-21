@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Session - {{ session.assignment.batch.class_model.name }} {{ session.assignment.batch.name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/live_session.css') }}">
+</head>
+<body>
+    <div class="live-session-container">
+        <header class="live-session-header">
+            <h1>Live Session: {{ session.assignment.batch.class_model.name }} - {{ session.assignment.batch.name }}</h1>
+            <p>Session {{ session.session_number }} on {{ session.start_time|timestamp_to_local('full') }}</p>
+        </header>
+
+        <div class="live-session-main">
+            <aside class="mentee-list-panel">
+                <h3>Mentees</h3>
+                <ul class="mentee-list">
+                    {% for mentee_item in mentees %}
+                        <li class="{{ 'has-approved-leave' if mentee_item.has_approved_leave }}"
+                            data-mentee-id="{{ mentee_item.profile.user_id }}" 
+                            data-mentee-name="{{ mentee_item.profile.user.name }}"
+                            data-has-leave="{{ mentee_item.has_approved_leave|lower }}">
+                            {{ mentee_item.profile.user.name }}
+                            {% if mentee_item.has_approved_leave %}
+                                <span class="badge badge-success">Leave Approved</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </aside>
+            <section id="record-panel" class="record-panel">
+                <div id="panel-initial-state" class="initial-state">
+                    <i class="fas fa-hand-pointer"></i>
+                    <p>Select a mentee from the list to begin.</p>
+                </div>
+
+                <div id="panel-selected-state" class="selected-state">
+                    <div id="mentee-info-header">
+                        <h3 id="selected-mentee-name"></h3>
+                        <div class="mentee-actions">
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="mark-absent-checkbox">
+                                <label for="mark-absent-checkbox">Mark as Absent</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="leave-approved-message" class="alert alert-info" style="display: none;"></div>
+                    
+                    <div id="record-entry-section">
+                        <div class="form-group">
+                            <label for="record-type-selector">Select Record Type to Add</label>
+                            <select id="record-type-selector" class="form-control">
+                                <option value="">-- Choose a record type --</option>
+                                <option value="placement_information">Placement Information</option>
+                                <option value="research_record">Research Record</option>
+                                <option value="academic_mark_details">Academic Mark Details</option>
+                                <option value="honors_minor_marks">Honors / Minors Marks</option>
+                                <option value="mentor_meeting_details">Mentor Meeting Details</option>
+                                <option value="awards_achievements">Awards and Achievements</option>
+                                <option value="cocurricular_activity">Co-Curricular Activity</option>
+                                <option value="extracurricular_activity">Extra-Curricular Activity</option>
+                                <option value="internship_information">Internship Information</option>
+                            </select>
+                        </div>
+                        <div id="dynamic-form-container"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="live-session-footer">
+            <button id="end-session-btn" class="btn btn-danger">End Session</button>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/live_session.js') }}"></script>
+</body>
+</html>

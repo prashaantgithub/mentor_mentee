@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}View Mentor: {{ mentor_user.name }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+        align-items: start;
+    }
+    .profile-picture.large {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--primary-color);
+        margin: 1rem auto;
+        display: block;
+    }
+    .detail-group {
+        margin-bottom: 1.25rem;
+    }
+    .detail-group label {
+        font-weight: 600;
+        color: var(--light-text-color);
+        display: block;
+        font-size: 0.9em;
+        margin-bottom: 0.25rem;
+    }
+    .detail-group p {
+        margin: 0;
+        font-size: 1.1em;
+    }
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    .section-title {
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set mentor_profile = mentor_user.mentor_profile %}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1>Mentor Profile: {{ mentor_user.name }}</h1>
+    <a href="{{ url_for('admin.view_users') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to All Users
+    </a>
+</div>
+
+<div class="grid-container">
+    <div>
+        <div class="card">
+            <h3>Profile Picture</h3>
+            <img src="{{ mentor_user.profile_picture }}" alt="Profile Picture" class="profile-picture large">
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="section-title">Mentor Details</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Name</label><p>{{ mentor_user.name }}</p></div>
+            <div class="detail-group"><label>Email</label>
+                <p>
+                    {% if mentor_user.email and '@placeholder.edu' not in mentor_user.email %}
+                        {{ mentor_user.email }}
+                    {% else %}
+                        <span class="text-muted">Pending Completion</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <h3 class="section-title">Cabin Information</h3>
+        <div class="details-grid">
+            <div class="detail-group"><label>Block</label><p>{{ mentor_profile.cabin_block or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Floor</label><p>{{ mentor_profile.cabin_floor or 'N/A' }}</p></div>
+            <div class="detail-group"><label>Cabin Number</label><p>{{ mentor_profile.cabin_number or 'N/A' }}</p></div>
+        </div>
+
+        <h3 class="section-title">Current Assignments</h3>
+        {% if assignments %}
+            <div class="list-group">
+            {% for assignment in assignments %}
+                <div class="list-group-item">
+                    <strong>{{ assignment.batch.class_model.name }} - {{ assignment.batch.name }}</strong>
+                    <span class="text-muted">({{ assignment.batch.mentees.count() }} students)</span>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">This mentor has no active assignments.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Mentee Dashboard{% endblock %}
+
+{% block head_extra %}
+    <style>
+        .profile-summary { display: flex; align-items: center; gap: 20px; margin-bottom: 2rem; padding: 1.5rem; }
+        .profile-summary img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); }
+        .profile-summary-info h2 { margin: 0 0 0.25rem 0; color: var(--text-color); font-size: 1.5em; }
+        .profile-summary-info p { margin: 0; color: var(--light-text-color); }
+        .session-card { background-color: var(--surface-color); border-radius: 8px; box-shadow: 0 4px 15px var(--shadow-color); padding: 20px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 2rem; margin-bottom: 1.5rem; border-left: 4px solid var(--primary-color); }
+        .session-card-date { text-align: center; border-right: 1px solid var(--border-color); padding-right: 2rem; }
+        .session-card-date .month { font-size: 0.9rem; font-weight: 500; text-transform: uppercase; color: var(--light-text-color); }
+        .session-card-date .day { font-size: 2.5rem; font-weight: 600; line-height: 1.1; color: var(--primary-color); }
+        .session-card-info h3 { margin: 0 0 0.5rem 0; font-size: 1.25rem; color: var(--text-color); }
+        .session-card-info p { margin: 0; color: var(--light-text-color); }
+        .session-card-actions { display: flex; gap: 10px; }
+        .status-badge.Pending { background-color: #f39c12; color: #fff; }
+        .status-badge.Approved { background-color: var(--accent-color); }
+        .status-badge.Declined { background-color: var(--danger-color); }
+        .btn-secondary { background-color: var(--sidebar-active-bg); color: var(--sidebar-text); }
+        .btn-secondary:hover { background-color: #4a627a; color: var(--sidebar-text-hover); }
+        .btn-warning { background-color: #f39c12; color: #fff; }
+        .btn-warning:hover { background-color: #d68910; }
+        .ml-auto { margin-left: auto; }
+        .form-section-title { font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+{% if not force_profile_update %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+</div>
+<div class="card profile-summary">
+    <img src="{{ current_user.profile_picture }}" alt="Profile Picture">
+    <div class="profile-summary-info">
+        <h2>Hello, {{ current_user.name }}</h2>
+        <p>Registration No: {{ mentee_profile.reg_num }}</p>
+        {% if mentee_profile.batch %}
+        <p>Your Batch: {{ mentee_profile.batch.class_model.name }} - {{ mentee_profile.batch.name }}</p>
+        {% endif %}
+    </div>
+    <a href="{{ url_for('mentee.download_mentee_full_report') }}" class="btn btn-primary ml-auto" style="align-self: center;"><i class="fas fa-file-pdf"></i> Download Full Report</a>
+</div>
+<h3>Upcoming / In Progress Sessions</h3>
+{% if sessions_with_status %}
+    {% for item in sessions_with_status %}
+    <div class="session-card">
+        <div class="session-card-date">
+            <div class="month">{{ item.session.start_time.strftime('%b') }}</div>
+            <div class="day">{{ item.session.start_time.strftime('%d') }}</div>
+        </div>
+        <div class="session-card-info">
+            <h3>Session {{ item.session.session_number }}</h3>
+            <p>{{ item.session.start_time|timestamp_to_local('full') }}</p>
+            {% if item.leave_status %}<p><strong>Leave Request:</strong> <span class="badge {{ item.leave_status }}">{{ item.leave_status }}</span></p>{% endif %}
+        </div>
+        <div class="session-card-actions">
+            <button type="button" class="btn btn-secondary view-session-details-btn" data-session-id="{{ item.session.id }}">View Details</button>
+            {% if not item.leave_status %}<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#leaveRequestModal" data-session-id="{{ item.session.id }}">Request Leave</button>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card"><p class="text-muted" style="text-align: center;">No upcoming or in-progress sessions found.</p></div>
+{% endif %}
+{% endif %}
+
+<!-- MODALS -->
+<div class="modal fade" id="profileUpdateModal" tabindex="-1" aria-labelledby="profileUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="profileUpdateModalLabel">Complete Your Profile</h5></div>
+            <div class="modal-body">
+                <div class="alert alert-warning" role="alert">Please complete your profile information to continue. All fields marked with an asterisk (*) are mandatory.</div>
+                <form method="POST" action="{{ url_for('mentee.dashboard') }}" id="profile-update-form">
+                    <h6 class="form-section-title">Personal and Academic Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">Name</label><input type="text" class="form-control" value="{{ current_user.name }}" disabled></div>
+                        <div class="col-md-4"><label class="form-label">Email *</label><input type="email" class="form-control" name="email" value="{{ current_user.email or '' }}" required pattern=".+@(btech|mtech)\.christuniversity\.in" title="Please use your official university email (...@btech.christuniversity.in or ...@mtech.christuniversity.in)"></div>
+                        <div class="col-md-4"><label class="form-label">Registration No.</label><input type="text" class="form-control" value="{{ mentee_profile.reg_num }}" disabled></div>
+                        <div class="col-md-4"><label class="form-label">Year of Joining *</label><select class="form-select" name="year_of_joining" required>{% for year in range(2020, 2026) %}<option value="{{ year }}" {% if mentee_profile.year_of_joining == year %}selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+                        <div class="col-md-4"><label class="form-label">Programme *</label><select class="form-select" name="programme" required><option value="BTECH" {% if mentee_profile.programme == 'BTECH' %}selected{% endif %}>B.Tech</option><option value="MTECH" {% if mentee_profile.programme == 'MTECH' %}selected{% endif %}>M.Tech</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Department *</label><select class="form-select" name="department" required><option value="Computer Science and Engineering" {% if mentee_profile.department == 'Computer Science and Engineering' %}selected{% endif %}>Computer Science and Engineering</option><option value="AIML & DS" {% if mentee_profile.department == 'AIML & DS' %}selected{% endif %}>AIML & DS</option><option value="Information Technology" {% if mentee_profile.department == 'Information Technology' %}selected{% endif %}>Information Technology</option><option value="Electronics and Communication Engineering" {% if mentee_profile.department == 'Electronics and Communication Engineering' %}selected{% endif %}>Electronics and Communication Engineering</option><option value="Mechanical Engineering" {% if mentee_profile.department == 'Mechanical Engineering' %}selected{% endif %}>Mechanical Engineering</option><option value="Civil Engineering" {% if mentee_profile.department == 'Civil Engineering' %}selected{% endif %}>Civil Engineering</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Date of Birth *</label><input type="text" class="form-control" id="dob-input" name="dob" value="{{ mentee_profile.dob.strftime('%Y-%m-%d') if mentee_profile.dob else '' }}" required placeholder="YYYY-MM-DD"></div>
+                        <div class="col-md-4"><label class="form-label">Age *</label><input type="number" class="form-control" id="age-input" name="age" value="{{ mentee_profile.age or '' }}" readonly required></div>
+                        <div class="col-md-4"><label class="form-label">Blood Group *</label><input type="text" class="form-control" name="blood_group" value="{{ mentee_profile.blood_group or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Personal Cell No. *</label><input type="tel" class="form-control" name="personal_cell" value="{{ mentee_profile.personal_cell or '' }}" required pattern="[0-9]{10}" maxlength="10" title="Please enter a 10-digit mobile number."></div>
+                        <div class="col-md-6"><label class="form-label">Residential Phone No.</label><input type="tel" class="form-control" name="residential_phone" value="{{ mentee_profile.residential_phone or '' }}" pattern="[0-9]{10}" maxlength="10" title="Please enter a 10-digit phone number."></div>
+                    </div>
+                    <h6 class="form-section-title">Family Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Father's Name *</label><input type="text" class="form-control" name="father_name" value="{{ mentee_profile.father_name or '' }}" required pattern="[A-Za-z\s\.]+" title="Name can only contain letters, spaces, and periods."></div>
+                        <div class="col-md-6"><label class="form-label">Father's Occupation *</label><input type="text" class="form-control" name="father_occupation" value="{{ mentee_profile.father_occupation or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Father's Education *</label><input type="text" class="form-control" name="father_education" value="{{ mentee_profile.father_education or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Father's Phone *</label><input type="tel" class="form-control" name="father_phone" value="{{ mentee_profile.father_phone or '' }}" required pattern="[0-9]{10}" maxlength="10" title="Please enter a 10-digit mobile number."></div>
+                        <div class="col-12"><label class="form-label">Father's Email *</label><input type="email" class="form-control" name="father_email" value="{{ mentee_profile.father_email or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Mother's Name *</label><input type="text" class="form-control" name="mother_name" value="{{ mentee_profile.mother_name or '' }}" required pattern="[A-Za-z\s\.]+" title="Name can only contain letters, spaces, and periods."></div>
+                        <div class="col-md-6"><label class="form-label">Mother's Occupation *</label><input type="text" class="form-control" name="mother_occupation" value="{{ mentee_profile.mother_occupation or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Mother's Education *</label><input type="text" class="form-control" name="mother_education" value="{{ mentee_profile.mother_education or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Mother's Phone *</label><input type="tel" class="form-control" name="mother_phone" value="{{ mentee_profile.mother_phone or '' }}" required pattern="[0-9]{10}" maxlength="10" title="Please enter a 10-digit mobile number."></div>
+                        <div class="col-12"><label class="form-label">Mother's Email *</label><input type="email" class="form-control" name="mother_email" value="{{ mentee_profile.mother_email or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Family Income (Annual) *</label><input type="text" class="form-control" name="family_income" value="{{ mentee_profile.family_income or '' }}" required></div>
+                        <div class="col-md-6"><label class="form-label">Number of Siblings</label><input type="number" class="form-control" name="siblings" value="{{ mentee_profile.siblings or '' }}"></div>
+                    </div>
+                    <h6 class="form-section-title">Residential Information</h6>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label">Local Residence Type *</label><select class="form-select" name="local_residence_type" id="local_residence_type" required><option value="" {% if not mentee_profile.local_residence_type %}selected{% endif %}>-- Select --</option><option value="Parents" {% if mentee_profile.local_residence_type == 'Parents' %}selected{% endif %}>With Parents</option><option value="Hostel" {% if mentee_profile.local_residence_type == 'Hostel' %}selected{% endif %}>Hostel</option><option value="Relatives" {% if mentee_profile.local_residence_type == 'Relatives' %}selected{% endif %}>With Relatives</option><option value="PG/Rented House" {% if mentee_profile.local_residence_type == 'PG/Rented House' %}selected{% endif %}>PG / Rented House</option></select></div>
+                        <div class="col-12" id="address_field_container"><label class="form-label" id="address_label">Permanent Address *</label><textarea class="form-control" name="residence_address" rows="3" required>{{ mentee_profile.residence_address or '' }}</textarea></div>
+                    </div>
+                    <div id="hostel_fields" class="residence-dynamic-fields" style="display: none;"><h6 class="form-section-title">Hostel Details</h6><div class="row g-3"><div class="col-md-6"><label class="form-label">Hostel Name</label><input type="text" class="form-control" name="hostel_name" value="{{ mentee_profile.hostel_name or '' }}"></div><div class="col-md-6"><label class="form-label">Warden's Name</label><input type="text" class="form-control" name="guardian_name" value="{{ mentee_profile.guardian_name or '' }}" pattern="[A-Za-z\s\.]+" title="Name can only contain letters, spaces, and periods."></div></div></div>
+                    <div id="relatives_fields" class="residence-dynamic-fields" style="display: none;"><h6 class="form-section-title">Relative's Details</h6><div class="row g-3"><div class="col-md-4"><label class="form-label">Relative's Name</label><input type="text" class="form-control" name="guardian_name" value="{{ mentee_profile.guardian_name or '' }}" pattern="[A-Za-z\s\.]+" title="Name can only contain letters, spaces, and periods."></div><div class="col-md-4"><label class="form-label">Relationship</label><input type="text" class="form-control" name="guardian_relationship" value="{{ mentee_profile.guardian_relationship or '' }}"></div><div class="col-md-4"><label class="form-label">Relative's Mobile</label><input type="tel" class="form-control" name="pg_owner_mobile" value="{{ mentee_profile.pg_owner_mobile or '' }}" pattern="[0-9]{10}" maxlength="10" title="Please enter a 10-digit mobile number."></div></div></div>
+                    <div id="pg_fields" class="residence-dynamic-fields" style="display: none;"><h6 class="form-section-title">PG / Rented House Details</h6><div class="row g-3"><div class="col-md-6"><label class="form-label">Owner's Name</label><input type="text" class="form-control" name="pg_owner_name" value="{{ mentee_profile.pg_owner_name or '' }}" pattern="[A-Za-z\s\.]+" title="Name can only contain letters, spaces, and periods."></div><div class="col-md-6"><label class="form-label">Owner's Mobile</label><input type="tel" class="form-control" name="pg_owner_mobile" value="{{ mentee_profile.pg_owner_mobile or '' }}" pattern="[0-9]{10}" maxlength="10" title="Please enter a 10-digit mobile number."></div></div></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button type="submit" form="profile-update-form" class="btn btn-primary">Save and Continue</button></div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="leaveRequestModal" tabindex="-1" aria-labelledby="leaveRequestModalLabel" aria-hidden="true"><div class="modal-dialog"><div class="modal-content" style="background-color: var(--surface-color); color: var(--text-color);"><div class="modal-header"><h5 class="modal-title" id="leaveRequestModalLabel">Request Leave for Session</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><form id="leave-request-form"><div class="form-group"><label for="leaveReason">Reason for Leave:</label><textarea class="form-control" id="leaveReason" rows="3" required></textarea></div><input type="hidden" id="modalSessionId"></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" id="submit-leave-request">Submit Request</button></div></div></div></div>
+{% endblock %}
+
+{% block body_extra %}
+<script>
+const forceProfileUpdate = {{ force_profile_update|tojson }};
+function calculateAge(dobString) {
+    if (!dobString) return '';
+    const dob = new Date(dobString);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+}
+document.addEventListener('DOMContentLoaded', function() {
+    if (forceProfileUpdate) {
+        const profileUpdateModalElement = document.getElementById('profileUpdateModal');
+        const profileModal = new bootstrap.Modal(profileUpdateModalElement, { backdrop: 'static', keyboard: false });
+        profileModal.show();
+    }
+
+    const ageInput = document.getElementById('age-input');
+    flatpickr("#dob-input", {
+        dateFormat: "Y-m-d",
+        onChange: function(selectedDates, dateStr, instance) {
+            if (ageInput) {
+                ageInput.value = calculateAge(dateStr);
+            }
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const calendarContainer = instance.calendarContainer;
+            const monthNav = calendarContainer.querySelector('.flatpickr-month');
+            const yearNav = monthNav.querySelector('.numInputWrapper');
+            if (yearNav) {
+                yearNav.addEventListener('click', (e) => e.stopPropagation());
+            }
+        }
+    });
+
+    const residenceTypeSelect = document.getElementById('local_residence_type');
+    if (residenceTypeSelect) {
+        const dynamicFields = document.querySelectorAll('.residence-dynamic-fields');
+        const addressContainer = document.getElementById('address_field_container');
+        const addressLabel = document.getElementById('address_label');
+        function toggleResidenceFields() {
+            const selectedType = residenceTypeSelect.value;
+            dynamicFields.forEach(field => field.style.display = 'none');
+            addressContainer.style.display = 'block';
+            switch(selectedType) {
+                case 'Hostel': document.getElementById('hostel_fields').style.display = 'block'; addressLabel.textContent = 'Permanent Home Address *'; break;
+                case 'Relatives': document.getElementById('relatives_fields').style.display = 'block'; addressLabel.textContent = 'Relative\'s Address *'; break;
+                case 'PG/Rented House': document.getElementById('pg_fields').style.display = 'block'; addressLabel.textContent = 'PG / Rented House Address *'; break;
+                default: addressLabel.textContent = 'Permanent Address *'; break;
+            }
+        }
+        residenceTypeSelect.addEventListener('change', toggleResidenceFields);
+        toggleResidenceFields();
+    }
+    const leaveRequestModal = document.getElementById('leaveRequestModal');
+    if (leaveRequestModal) {
+        leaveRequestModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const sessionId = button.getAttribute('data-session-id');
+            leaveRequestModal.querySelector('#modalSessionId').value = sessionId;
+        });
+    }
+    const submitButton = document.getElementById('submit-leave-request');
+    if(submitButton) {
+        submitButton.addEventListener('click', async function() {
+            const sessionId = document.getElementById('modalSessionId').value;
+            const reason = document.getElementById('leaveReason').value;
+            if (!reason.trim()) { showAlert('Reason for leave cannot be empty.', 'warning'); return; }
+            try {
+                const response = await fetch(`/api/mentee/session/${sessionId}/request_leave`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ reason: reason }) });
+                const result = await response.json();
+                const modalInstance = bootstrap.Modal.getInstance(leaveRequestModal);
+                modalInstance.hide();
+                if (result.success) {
+                    showAlert('Leave request submitted successfully!', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showAlert(result.message || 'An error occurred.', 'danger');
+                }
+            } catch (error) {
+                showAlert('An error occurred while submitting your leave request.', 'danger');
+            }
+        });
+    }
+    const viewDetailsModal = document.getElementById('viewDetailsModal');
+    if(viewDetailsModal) {
+        viewDetailsModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const sessionTime = button.getAttribute('data-session-time');
+            const mentorName = button.getAttribute('data-mentor-name');
+            const cabinBlock = button.getAttribute('data-cabin-block');
+            const cabinFloor = button.getAttribute('data-cabin-floor');
+            const cabinNumber = button.getAttribute('data-cabin-number');
+            viewDetailsModal.querySelector('#modal-session-time').textContent = sessionTime;
+            viewDetailsModal.querySelector('#modal-mentor-name').textContent = mentorName;
+            let cabinDetailsParts = [];
+            if (cabinBlock && cabinBlock !== 'N/A') cabinDetailsParts.push(cabinBlock);
+            if (cabinFloor && cabinFloor !== 'N/A') cabinDetailsParts.push(`${cabinFloor} Floor`);
+            if (cabinNumber && cabinNumber !== 'N/A') cabinDetailsParts.push(`Cabin No: ${cabinNumber}`);
+            let cabinDetailsText = cabinDetailsParts.join(', ');
+            if (!cabinDetailsText) { cabinDetailsText = 'Not specified'; }
+            viewDetailsModal.querySelector('#modal-cabin-details').textContent = cabinDetailsText;
+        });
+    }
+});
+</script>
+{% endblock %}

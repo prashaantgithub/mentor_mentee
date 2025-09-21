@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Completed Sessions{% endblock %}
+
+{% block head_extra %}
+<style>
+    .session-history-item-wrapper {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+    .session-history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s ease;
+    }
+    .session-history-item:hover {
+        background-color: var(--surface-hover-color);
+    }
+    #completed-sessions-list > a:last-child .session-history-item {
+        border-bottom: none;
+    }
+    .session-info p {
+        margin: 0.25rem 0;
+        font-size: 0.9rem;
+    }
+    .session-info p.date-info {
+        color: var(--text-muted);
+    }
+    .status-badge {
+        padding: 0.4em 0.8em;
+        border-radius: var(--border-radius-lg);
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    .status-completed {
+        background-color: var(--success-light-color);
+        color: var(--success-color);
+    }
+    .status-missed {
+        background-color: var(--danger-light-color);
+        color: var(--danger-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Completed Sessions History</h1>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div id="completed-sessions-list">
+        {% if sessions %}
+            {% for session in sessions %}
+                {% set endpoint = 'admin.session_details' if current_user.role == 'admin' else ('mentee.session_details' if current_user.role == 'mentee' else 'mentor.session_details') %}
+                <a href="{{ url_for(endpoint, session_id=session.id) }}" class="session-history-item-wrapper">
+                    <div class="session-history-item">
+                        <div class="session-info">
+                            <p><strong>Session {{ session.session_number }}</strong> with {{ session.assignment.batch.class_model.name }} - {{ session.assignment.batch.name }}</p>
+                            {% if current_user.role != 'mentor' %}
+                            <p class="date-info">Mentor: {{ session.assignment.mentor.name }}</p>
+                            {% endif %}
+                            <p class="date-info">
+                                Scheduled: {{ session.start_time|timestamp_to_local('full') }}
+                            </p>
+                            {% if session.actual_start_time %}
+                                <p class="date-info">
+                                    Actual Duration: {{ session.actual_start_time|timestamp_to_local('short') }} - {{ session.actual_end_time|timestamp_to_local('short') if session.actual_end_time else 'N/A' }}
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if session.status == 'Completed' %}
+                                <span class="status-badge status-completed">Completed</span>
+                            {% elif session.status == 'Missed' %}
+                                 <span class="status-badge status-missed">Missed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 1rem;">
+                <p>You have no completed or missed sessions.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

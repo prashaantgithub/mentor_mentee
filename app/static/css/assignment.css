@@ -1,0 +1,71 @@
+.assignment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.selection-panel h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 200px;
+}
+
+/* Hide the default radio and checkbox inputs */
+.batch-button-group input[type="checkbox"],
+.mentor-list-item input[type="radio"] {
+    display: none;
+}
+
+/* Style the labels to look like buttons */
+.batch-button-group label,
+.mentor-list-item label {
+    display: block;
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.batch-button-group label:hover,
+.mentor-list-item label:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light-color);
+}
+
+/* Style for when the item is selected */
+.batch-button-group input[type="checkbox"]:checked + label,
+.mentor-list-item input[type="radio"]:checked + label {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.batch-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.batch-button-group, .mentor-list-item {
+    position: relative;
+    width: 100%;
+}
+
+.batch-button-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
