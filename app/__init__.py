@@ -25,6 +25,8 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    from .commands import create_admin_command
+    app.cli.add_command(create_admin_command)
     
     from . import models
     from .routes.main_routes import main_bp
